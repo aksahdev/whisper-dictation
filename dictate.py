@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# See LICENSE for details.
 """Whisper speech-to-text dictation script for Linux.
 
 Features

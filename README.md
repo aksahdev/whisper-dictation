@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Universal speech-to-text dictation script for Linux supporting push-to-talk and toggle recording modes with configurable hotkey.
+Whisper speech-to-text dictation script for Linux supporting push-to-talk and toggle recording modes with configurable hotkey.
 
 ## Features
 - Push-to-talk (hold) or toggle (press) recording modes
@@ -40,7 +40,7 @@ GROK_API_KEY=gsk-...
 ## Usage
 
 ```bash
-python3 dictate.py help            # show colored help menu
+python3 dictate.py -h            # show help menu
 python3 dictate.py --backend openai
 python3 dictate.py --backend grok --mode toggle --hotkey space
 ```

@@ -6,7 +6,7 @@
 Features
 --------
 • Push-to-talk (hold) or toggle recording (press) modes.
-• Configurable hotkey (default: Right arrow via --hotkey).
+• Configurable hotkey (default: numpad5 via --hotkey).
 • Backends: OpenAI Whisper (`whisper-1`) & Groq STT.
 
 Install deps
@@ -17,8 +17,8 @@ Install deps
 Usage
 -----
     # Add API keys to .env before running
-    python3 dictate.py --backend openai
-    python3 dictate.py --backend grok --mode toggle --hotkey space
+    python3 dictate.py --backend grok
+    python3 dictate.py --backend openai --mode toggle --hotkey space
 """
 from __future__ import annotations
 
@@ -164,16 +164,16 @@ def main(argv: list[str] | None = None) -> None:
         description="Push-to-talk dictation (reads API keys from .env).",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""Examples:
-  python3 dictate.py --backend grok --mode hold --hotkey space
+  python3 dictate.py --backend grok --mode hold --hotkey numpad5
   python3 dictate.py --backend openai --mode toggle --hotkey f9"""
     )
     p.add_argument(
         "--backend",
         choices=TRANSCRIBERS.keys(),
-        default="openai",
-        help="Speech-to-text backend to use: 'openai' or 'grok' (default: openai)",
+        default="grok",
+        help="Speech-to-text backend to use: 'openai' or 'grok' (default: grok)",
     )
-    p.add_argument("--hotkey", default="right", help="Key to use for recording (default: right arrow)")
+    p.add_argument("--hotkey", default="numpad5", help="Key to use for recording (default: numpad5)")
     p.add_argument("--mode", choices=["hold","toggle"], default="hold",
                    help="Recording mode: 'hold' to push-to-talk, 'toggle' to start/stop on key press (default: hold)")
     # support `help` command
@@ -182,11 +182,18 @@ def main(argv: list[str] | None = None) -> None:
         sys.exit(0)
     args = p.parse_args(argv)
 
+    # Map special hotkey names to virtual keycodes
+    special_vk = {
+        "numpad5": 65437,
+    }
+
     # Load API key from environment variables exclusively
     if args.backend == "openai":
         api_key = os.getenv("OPENAI_API_KEY")
-    else:
+    elif args.backend == "grok":
         api_key = os.getenv("GROK_API_KEY")
+    else:
+        api_key = None
     if not api_key:
         p.error(f"Missing API key for backend {args.backend}; please set in .env file.")
 
@@ -200,9 +207,13 @@ def main(argv: list[str] | None = None) -> None:
     else:
         print(f"[INFO] Press {args.hotkey.upper()} to toggle recording.  Ctrl+C to exit.")
 
-    hotkey_key = getattr(keyboard.Key, args.hotkey.lower(), None)
-    if hotkey_key is None:
-        hotkey_key = keyboard.KeyCode.from_char(args.hotkey)
+    hotkey_key = None
+    if args.hotkey.lower() in special_vk:
+        hotkey_key = keyboard.KeyCode.from_vk(special_vk[args.hotkey.lower()])
+    else:
+        hotkey_key = getattr(keyboard.Key, args.hotkey.lower(), None)
+        if hotkey_key is None:
+            hotkey_key = keyboard.KeyCode.from_char(args.hotkey)
 
     def on_press(key):
         # Show current options if '?' is pressed

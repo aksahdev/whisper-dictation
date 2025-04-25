@@ -22,7 +22,7 @@ sudo apt install xdotool wtype
 ## Installation
 
 ```bash
-git clone https://github.com/<your-org>/whisper-dictate.git
+git clone https://github.com/aksahdev/whisper-dictate.git
 cd whisper-dictate
 python3 -m venv .venv
 source .venv/bin/activate

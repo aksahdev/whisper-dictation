@@ -193,7 +193,8 @@ def main(argv: list[str] | None = None) -> None:
     transcriber = TRANSCRIBERS[args.backend]
     rec = PushToTalkRecorder()
     mode = args.mode
-    # Startup message based on mode
+    # Display selected options
+    print(f"[INFO] Backend: {args.backend}, Mode: {mode}, Hotkey: {args.hotkey.upper()}")
     if mode == "hold":
         print(f"[INFO] Hold {args.hotkey.upper()} to speak.  Ctrl+C to exit.")
     else:
@@ -204,6 +205,10 @@ def main(argv: list[str] | None = None) -> None:
         hotkey_key = keyboard.KeyCode.from_char(args.hotkey)
 
     def on_press(key):
+        # Show current options if '?' is pressed
+        if hasattr(key, 'char') and key.char == '?':
+            print(f"[INFO] Backend: {args.backend}, Mode: {mode}, Hotkey: {args.hotkey.upper()}")
+            return
         # Toggle recording on hotkey press
         if key == hotkey_key:
             if mode == "toggle":

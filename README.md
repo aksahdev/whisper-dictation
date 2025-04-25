@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Whisper speech-to-text dictation script for Linux supporting push-to-talk and toggle recording modes with configurable hotkey.
+Whisper speech-to-text dictation script, currently Linux only, supporting push-to-talk and toggle recording modes with configurable hotkey. Uses OpenAI or Groq APIs.
 
 ## Features
 - Push-to-talk (hold) or toggle (press) recording modes
@@ -58,3 +58,15 @@ Contributions are welcome. Please fork and submit a pull request.
 ## License
 
 This project is licensed under the MIT License - see [LICENSE](LICENSE) for details.
+
+## TODO 
+
+- [ ] Integrate local Whisper Models
+- [ ] Add daemon mode
+- [ ] Add more configuration options
+- [ ] Add a GUI for non-power users
+- [ ] Improve CLI UI
+- [ ] Add script for setup
+- [ ] Cross platform support (?)
+- [ ] Refactor code for maintainability
+- [ ] Add Streaming (live transcription) support

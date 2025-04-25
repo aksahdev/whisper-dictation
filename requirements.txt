@@ -1,0 +1,8 @@
+openai
+sounddevice
+soundfile
+pynput
+numpy
+groq
+pyautogui
+python-dotenv

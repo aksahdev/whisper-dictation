@@ -1,72 +1,92 @@
-# whisper-dictate
+# whisper-dictate (Hyprland-friendly)
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Whisper speech-to-text dictation script, currently Linux only, supporting push-to-talk and toggle recording modes with configurable hotkey. Uses OpenAI or Groq APIs.
+Minimal, reliable speech-to-text dictation for Linux. Defaults to Groq STT. Works on Wayland (Hyprland) and X11. Two ways to trigger dictation:
+- Voice-activated one-shot (auto start/stop on speech/silence)
+- Hotkey push-to-talk or toggle (default: numpad5)
+
+Core script: `dictate_min.py`
 
 ## Features
-- Push-to-talk (hold) or toggle (press) recording modes
-- Configurable hotkey (default: Right arrow)
-- Backends:
-  - OpenAI Whisper (`whisper-1` via OpenAI API)
-  - Groq Grok STT (`whisper-large-v3-turbo` via Groq SDK)
-- Reads API keys from `.env`
-- Dependency list in `requirements.txt`
+- Groq backend by default (fast), OpenAI optional
+- Wayland text typing via `ydotool`/`wtype`; X11 via `xdotool`
+- One-shot voice mode or hotkey mode (hold/toggle)
+- Numpad center without numlock is treated as `numpad5`
 
-## System Dependencies
+## Install
 
+1) System packages
 ```bash
-sudo apt install xdotool wtype
+sudo apt install ydotool ydotoold wtype xdotool
 ```
 
-## Installation
-
+2) Python deps
 ```bash
-git clone https://github.com/aksahdev/whisper-dictate.git
-cd whisper-dictate
-python3 -m venv .venv
-source .venv/bin/activate
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Setup
-
-Create a `.env` file in the project root:
+3) API keys in `.env`
 ```ini
-OPENAI_API_KEY=sk-...
 GROK_API_KEY=gsk-...
+OPENAI_API_KEY=sk-...  # optional if using --backend openai
 ```
 
 ## Usage
 
+Voice (default):
 ```bash
-python3 dictate.py -h            # show help menu
-python3 dictate.py --backend openai
-python3 dictate.py --backend grok --mode toggle --hotkey space
+python3 dictate_min.py
+# or explicitly
+python3 dictate_min.py --trigger voice
 ```
 
-## Configuration
+Hotkey (numpad5, hold):
+```bash
+python3 dictate_min.py --trigger key --mode hold
+```
 
-- `--backend`: `openai` or `grok`
-- `--mode`: `hold` (default) or `toggle`
-- `--hotkey`: key name (e.g., `right`, `space`, `f9`)
+Hotkey (numpad5, toggle):
+```bash
+python3 dictate_min.py --trigger key --mode toggle
+```
 
-## Contributing
+Custom key (examples):
+```bash
+python3 dictate_min.py --trigger key --mode hold --hotkey space
+python3 dictate_min.py --trigger key --mode toggle --hotkey f9
+```
 
-Contributions are welcome. Please fork and submit a pull request.
+Print-only (no typing):
+```bash
+python3 dictate_min.py --print-only
+```
+
+Backend selection:
+```bash
+python3 dictate_min.py --backend openai
+# default is --backend grok
+```
+
+## Hyprland
+
+Add a bind (toggle example):
+```bash
+bind = SUPER, F12, exec, sh -lc 'cd /home/$USER/src/pyscripts/whisper-dictate && python3 dictate_min.py --trigger key --mode toggle'
+exec-once = ydotoold
+```
+
+## Troubleshooting
+
+- Ensure `ydotoold` is running for Wayland typing:
+```bash
+pgrep ydotoold || ydotoold &
+```
+- Focus the target window before/after running
+- If typing fails, use `--print-only` to confirm STT and check `TROUBLESHOOTING.md`
 
 ## License
 
-This project is licensed under the MIT License - see [LICENSE](LICENSE) for details.
-
-## TODO 
-
-- [ ] Integrate local Whisper Models
-- [ ] Add daemon mode
-- [ ] Add more configuration options
-- [ ] Add a GUI for non-power users
-- [ ] Improve CLI UI
-- [ ] Add script for setup
-- [ ] Cross platform support (?)
-- [ ] Refactor code for maintainability
-- [ ] Add Streaming (live transcription) support
+MIT

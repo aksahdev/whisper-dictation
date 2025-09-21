@@ -28,6 +28,8 @@ import queue
 import subprocess
 import sys
 import tempfile
+import signal
+import logging
 from pathlib import Path
 
 import numpy as np  # type: ignore
@@ -52,24 +54,81 @@ except ImportError:
 
 def _type_text(text: str) -> None:
     """Type *text* into the active window using available tools."""
-
-    # Wayland first
-    if os.environ.get("XDG_SESSION_TYPE") == "wayland":
+    import time
+    
+    # Small delay to ensure the window is ready to receive input
+    time.sleep(0.1)
+    
+    session_type = os.environ.get("XDG_SESSION_TYPE", "").lower()
+    wayland_display = os.environ.get("WAYLAND_DISPLAY")
+    x11_display = os.environ.get("DISPLAY")
+    
+    print(f"[DEBUG] Session type: {session_type}, Wayland: {wayland_display}, X11: {x11_display}", file=sys.stderr)
+    
+    # Wayland environment - try Wayland-specific tools first
+    if session_type == "wayland" or wayland_display:
+        # Try wtype first (often more reliable than ydotool)
         if subprocess.run(["which", "wtype"], capture_output=True).returncode == 0:
-            subprocess.run(["wtype", text], check=False)
-            return
+            try:
+                result = subprocess.run(["wtype", text], 
+                                      capture_output=True, text=True, timeout=5)
+                if result.returncode != 0:
+                    print(f"[DEBUG] wtype failed: {result.stderr}", file=sys.stderr)
+                else:
+                    print(f"[DEBUG] Successfully typed with wtype: {text[:50]}...", file=sys.stderr)
+                    return
+            except subprocess.TimeoutExpired:
+                print("[ERROR] wtype timed out", file=sys.stderr)
+        
+        # Fallback to ydotool for Wayland
+        if subprocess.run(["which", "ydotool"], capture_output=True).returncode == 0:
+            try:
+                # Check if ydotoold is running, if not start it
+                daemon_check = subprocess.run(["pgrep", "ydotoold"], capture_output=True)
+                if daemon_check.returncode != 0:
+                    print("[INFO] Starting ydotool daemon...", file=sys.stderr)
+                    subprocess.Popen(["ydotoold"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    time.sleep(0.5)  # Give daemon time to start
+                
+                result = subprocess.run(["ydotool", "type", text], 
+                                      capture_output=True, text=True, timeout=5)
+                if result.returncode != 0:
+                    print(f"[DEBUG] ydotool failed: {result.stderr}", file=sys.stderr)
+                else:
+                    print(f"[DEBUG] Successfully typed with ydotool: {text[:50]}...", file=sys.stderr)
+                    return
+            except subprocess.TimeoutExpired:
+                print("[ERROR] ydotool timed out", file=sys.stderr)
+            except Exception as e:
+                print(f"[DEBUG] ydotool error: {e}", file=sys.stderr)
 
-    # X11 / fallback
-    if subprocess.run(["which", "xdotool"], capture_output=True).returncode == 0:
-        subprocess.run(["xdotool", "type", "--delay", "10", text], check=False)
-        return
+    # X11 environment or fallback
+    if session_type == "x11" or x11_display or not (session_type == "wayland" or wayland_display):
+        if subprocess.run(["which", "xdotool"], capture_output=True).returncode == 0:
+            try:
+                result = subprocess.run(["xdotool", "type", "--delay", "10", text], 
+                                      capture_output=True, text=True, timeout=5)
+                if result.returncode != 0:
+                    print(f"[DEBUG] xdotool failed: {result.stderr}", file=sys.stderr)
+                else:
+                    print(f"[DEBUG] Successfully typed with xdotool: {text[:50]}...", file=sys.stderr)
+                    return
+            except subprocess.TimeoutExpired:
+                print("[ERROR] xdotool timed out", file=sys.stderr)
 
+    # Python fallback (works on both X11 and Wayland in some cases)
     try:
         import pyautogui  # type: ignore
-
         pyautogui.typewrite(text, interval=0.01)
+        print(f"[DEBUG] Successfully typed with pyautogui: {text[:50]}...", file=sys.stderr)
+        return
     except ImportError:
-        print("[ERROR] No tool found to emit keystrokes (need xdotool, wtype or pyautogui).", file=sys.stderr)
+        pass
+    
+    print("[ERROR] No working tool found to emit keystrokes. Please install:", file=sys.stderr)
+    print("  - For Wayland: ydotool + ydotoold, or wtype", file=sys.stderr)
+    print("  - For X11: xdotool", file=sys.stderr)
+    print("  - Universal: pip install pyautogui", file=sys.stderr)
 
 # ---------------------------------------------------------------------------
 # Recorder class
@@ -155,6 +214,45 @@ TRANSCRIBERS = {
 }
 
 # ---------------------------------------------------------------------------
+# Daemon functionality
+# ---------------------------------------------------------------------------
+
+def setup_daemon(log_file=None):
+    """Setup daemon mode - configure logging and signal handling"""
+    import os
+    import sys
+    
+    # Setup logging
+    if log_file:
+        log_path = os.path.expanduser(log_file)
+    else:
+        log_path = os.path.expanduser("~/.local/share/whisper-dictate.log")
+    
+    # Ensure log directory exists
+    os.makedirs(os.path.dirname(log_path), exist_ok=True)
+    
+    # Setup logging configuration
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler(log_path),
+        ]
+    )
+    
+    # Handle signals for clean shutdown
+    def signal_handler(signum, frame):
+        logging.info(f"Received signal {signum}, shutting down...")
+        sys.exit(0)
+    
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+    
+    logging.info(f"Daemon mode started, logging to {log_path}")
+    print(f"[INFO] Daemon mode active. Logging to: {log_path}")
+    print(f"[INFO] Process running in background (PID: {os.getpid()})")
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -176,11 +274,17 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--hotkey", default="numpad5", help="Key to use for recording (default: numpad5)")
     p.add_argument("--mode", choices=["hold","toggle"], default="hold",
                    help="Recording mode: 'hold' to push-to-talk, 'toggle' to start/stop on key press (default: hold)")
+    p.add_argument("--daemon", action="store_true", help="Run as daemon in background")
+    p.add_argument("--log-file", default=None, help="Log file path (for daemon mode)")
     # support `help` command
     if argv and argv[0].lower() == "help":
         p.print_help()
         sys.exit(0)
     args = p.parse_args(argv)
+
+    # Setup daemon mode if requested
+    if args.daemon:
+        setup_daemon(args.log_file)
 
     # Map special hotkey names to virtual keycodes
     special_vk = {

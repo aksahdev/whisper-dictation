@@ -1,3 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environments
+venv/
+.venv/
+whisper-env/
+
+# Build artifacts
+build/
+dist/
+*.spec
+
+# OS/editor
+.DS_Store
+.idea/
+.vscode/
+
+# Secrets
+.env
+
 # Local environment variables
 .env
 

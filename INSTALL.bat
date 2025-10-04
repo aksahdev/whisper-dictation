@@ -68,12 +68,16 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM Copy alias
+REM Copy alias and profiles
 copy /Y "wd.bat" "%INSTALL_DIR%\wd.bat" >nul
+copy /Y "wd-hold.bat" "%INSTALL_DIR%\wd-hold.bat" >nul
+copy /Y "wd-toggle.bat" "%INSTALL_DIR%\wd-toggle.bat" >nul
+copy /Y "wd-voice.bat" "%INSTALL_DIR%\wd-voice.bat" >nul
 
 echo ✓ Binary installed successfully!
 echo   - whisper-dictate.exe (full name)
 echo   - wd.bat (quick alias)
+echo   - wd-hold.bat, wd-toggle.bat, wd-voice.bat (quick profiles)
 echo.
 
 REM ===========================================
@@ -359,6 +363,11 @@ echo.
 echo Quick alias available:
 echo   wd --trigger voice           (same as whisper-dictate)
 echo   wd --trigger key --mode hold --hotkey numpad5
+echo.
+echo Quick profiles (no arguments needed!):
+echo   wd-hold      - Numpad5 hold mode (RMS 0.010)
+echo   wd-toggle    - Numpad5 toggle mode (RMS 0.010)
+echo   wd-voice     - Voice activated mode (RMS 0.010)
 echo.
 if /i "%SETUP_AHK%"=="y" (
     echo Global hotkeys active:

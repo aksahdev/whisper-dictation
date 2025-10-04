@@ -42,6 +42,15 @@ Just double-click any shortcut on your desktop:
 - **Whisper Dictate (Numpad5 Toggle)** - Press numpad5 to start/stop
 
 ### Command Line
+
+**Quick Profiles (Easiest!)** - Just type and go:
+```powershell
+wd-hold      # Numpad5 hold mode (RMS 0.010)
+wd-toggle    # Numpad5 toggle mode (RMS 0.010)
+wd-voice     # Voice activated mode (RMS 0.010)
+```
+
+**Full Commands:**
 ```powershell
 # Voice-activated mode
 whisper-dictate --trigger voice
@@ -140,8 +149,9 @@ whisper-dictate --trigger voice --silence-rms 0.007 --silence-stop-ms 1800 --bac
 
 - **`INSTALL.bat`** - ⭐ THE installer (does everything!)
 - **`setup-api-key.bat`** - Quick API key updater (no full reinstall needed)
-- `whisper-dictate.exe` - Standalone executable (~20MB)
+- `whisper-dictate.exe` - Standalone executable (~40MB)
 - `wd.bat` - Quick alias for `whisper-dictate` 
+- **`wd-hold.bat`, `wd-toggle.bat`, `wd-voice.bat`** - 🎯 Pre-configured profiles (just run!)
 - `dictate_min.py` - Source code
 - `requirements.txt` - Python dependencies
 - `LICENSE` - MIT license

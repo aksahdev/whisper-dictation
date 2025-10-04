@@ -1,4 +1,4 @@
 @echo off
 REM Quick alias for whisper-dictate
-whisper-dictate.exe %*
+"%~dp0whisper-dictate.exe" %*
 

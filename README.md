@@ -54,6 +54,10 @@ whisper-dictate --trigger key --mode toggle --hotkey space
 
 # Use OpenAI instead of Groq
 whisper-dictate --trigger voice --backend openai
+
+# Quick alias (same commands, shorter!)
+wd --trigger voice
+wd --trigger key --mode hold --hotkey numpad5
 ```
 
 ### Global Hotkeys (if AutoHotkey installed)
@@ -137,6 +141,7 @@ whisper-dictate --trigger voice --silence-rms 0.007 --silence-stop-ms 1800 --bac
 - **`INSTALL.bat`** - ⭐ THE installer (does everything!)
 - **`setup-api-key.bat`** - Quick API key updater (no full reinstall needed)
 - `whisper-dictate.exe` - Standalone executable (~20MB)
+- `wd.bat` - Quick alias for `whisper-dictate` 
 - `dictate_min.py` - Source code
 - `requirements.txt` - Python dependencies
 - `LICENSE` - MIT license

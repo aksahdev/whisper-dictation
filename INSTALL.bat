@@ -68,7 +68,12 @@ if errorlevel 1 (
     exit /b 1
 )
 
+REM Copy alias
+copy /Y "wd.bat" "%INSTALL_DIR%\wd.bat" >nul
+
 echo ✓ Binary installed successfully!
+echo   - whisper-dictate.exe (full name)
+echo   - wd.bat (quick alias)
 echo.
 
 REM ===========================================
@@ -350,6 +355,10 @@ echo Command line usage (after restarting terminal):
 echo   whisper-dictate --trigger voice
 echo   whisper-dictate --trigger key --mode hold --hotkey numpad5
 echo   whisper-dictate --trigger key --mode toggle --hotkey space
+echo.
+echo Quick alias available:
+echo   wd --trigger voice           (same as whisper-dictate)
+echo   wd --trigger key --mode hold --hotkey numpad5
 echo.
 if /i "%SETUP_AHK%"=="y" (
     echo Global hotkeys active:

@@ -349,8 +349,6 @@ def main(argv: list[str] | None = None) -> None:
 
         rec = PushToTalkRecorder(samplerate=args.samplerate)
         rec_active = {"v": False}
-        done = {"v": False}
-        transcribed: list[str] = [""]
 
         def start_rec():
             if not rec_active["v"]:
@@ -370,13 +368,23 @@ def main(argv: list[str] | None = None) -> None:
                         t = transcribe_groq(wav2, api_key_groq)
                     else:
                         t = transcribe_openai(wav2, api_key_openai)
-                    transcribed[0] = t
+                    
+                    # Type or print the transcription
+                    if not args.no_trailing_space:
+                        t += " "
+                    
+                    log(f"Transcribed: {t[:80]!r}")
+                    
+                    if not args.print_only:
+                        if not type_text(t):
+                            error("Failed to inject text. See TROUBLESHOOTING.md.")
+                    else:
+                        print(t)
                 finally:
                     try:
                         wav2.unlink(missing_ok=True)
                     except Exception:
                         pass
-                done["v"] = True
 
         def matches_hotkey(k) -> bool:
             # Direct comparison
@@ -413,7 +421,7 @@ def main(argv: list[str] | None = None) -> None:
                 warn(f"on_release error: {e}")
 
         log(f"Hotkey mode active: {args.mode} on {args.hotkey.upper()} (Ctrl+C to exit)")
-        log("TIP: Try pressing the key multiple times if it doesn't work immediately")
+        log("Ready - press hotkey to dictate (will continue running until Ctrl+C)")
         
         try:
             listener = keyboard.Listener(on_press=on_press, on_release=on_release)
@@ -423,19 +431,24 @@ def main(argv: list[str] | None = None) -> None:
             error(f"Failed to start keyboard listener: {e}")
             error("Try running as Administrator or use --trigger voice instead")
             sys.exit(2)
+        
         try:
-            while not done["v"]:
-                time.sleep(0.05)
+            # Keep running until Ctrl+C
+            listener.join()
         except KeyboardInterrupt:
             print()
+            log("Exiting...")
         finally:
             try:
                 listener.stop()
             except Exception:
                 pass
             rec.close()
-        text = transcribed[0]
+        
+        # Exit after cleanup in hotkey mode
+        sys.exit(0)
 
+    # Voice mode - handle single transcription
     if not text:
         warn("Empty transcription.")
         sys.exit(0)

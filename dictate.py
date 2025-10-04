@@ -326,10 +326,6 @@ def main(argv: list[str] | None = None) -> None:
             print(f"[INFO] Backend: {args.backend}, Mode: {mode}, Hotkey: {args.hotkey.upper()}")
             return
         
-        # Debug output for numpad5
-        if args.hotkey.lower() == "numpad5" and hasattr(key, 'vk'):
-            print(f"[DEBUG] Key: {key}, vk={getattr(key, 'vk', None)}, hotkey_vk={getattr(hotkey_key, 'vk', None)}")
-        
         # Toggle recording on hotkey press
         if matches_hotkey(key):
             if mode == "toggle":

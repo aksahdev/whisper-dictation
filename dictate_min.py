@@ -394,10 +394,6 @@ def main(argv: list[str] | None = None) -> None:
 
         def on_press(k):
             try:
-                # Debug: show what key was pressed (only for numpad5)
-                if args.hotkey.lower() == "numpad5" and hasattr(k, 'vk'):
-                    log(f"Key pressed: {k}, vk={getattr(k, 'vk', None)}, hotkey_vk={getattr(hotkey_key, 'vk', None)}")
-                
                 if matches_hotkey(k):
                     if args.mode == "toggle":
                         if not rec_active["v"]:

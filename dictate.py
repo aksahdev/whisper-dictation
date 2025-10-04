@@ -291,9 +291,9 @@ def main(argv: list[str] | None = None) -> None:
     # Display selected options
     print(f"[INFO] Backend: {args.backend}, Mode: {mode}, Hotkey: {args.hotkey.upper()}")
     if mode == "hold":
-        print(f"[INFO] Hold {args.hotkey.upper()} to speak.  Ctrl+C to exit.")
+        print(f"[INFO] Hold {args.hotkey.upper()} to speak. Press ESC to exit.")
     else:
-        print(f"[INFO] Press {args.hotkey.upper()} to toggle recording.  Ctrl+C to exit.")
+        print(f"[INFO] Press {args.hotkey.upper()} to toggle recording. Press ESC to exit.")
 
     hotkey_key = None
     if args.hotkey.lower() in special_vk:
@@ -321,6 +321,11 @@ def main(argv: list[str] | None = None) -> None:
         return False
 
     def on_press(key):
+        # ESC to exit
+        if key == keyboard.Key.esc:
+            print("[INFO] ESC pressed - exiting...")
+            return False  # Stop listener
+        
         # Show current options if '?' is pressed
         if hasattr(key, 'char') and key.char == '?':
             print(f"[INFO] Backend: {args.backend}, Mode: {mode}, Hotkey: {args.hotkey.upper()}")
@@ -372,7 +377,7 @@ def main(argv: list[str] | None = None) -> None:
         listener = keyboard.Listener(on_press=on_press)
 
     print("[INFO] Keyboard listener started. Waiting for hotkey...")
-    print("[INFO] TIP: Try pressing the key multiple times if it doesn't work immediately")
+    print("[INFO] Press '?' for current settings, ESC to exit")
     
     try:
         with listener as listener:

@@ -402,6 +402,11 @@ def main(argv: list[str] | None = None) -> None:
 
         def on_press(k):
             try:
+                # ESC to exit
+                if k == keyboard.Key.esc:
+                    log("ESC pressed - exiting...")
+                    return False  # Stop listener
+                
                 if matches_hotkey(k):
                     if args.mode == "toggle":
                         if not rec_active["v"]:
@@ -420,8 +425,8 @@ def main(argv: list[str] | None = None) -> None:
             except Exception as e:
                 warn(f"on_release error: {e}")
 
-        log(f"Hotkey mode active: {args.mode} on {args.hotkey.upper()} (Ctrl+C to exit)")
-        log("Ready - press hotkey to dictate (will continue running until Ctrl+C)")
+        log(f"Hotkey mode active: {args.mode} on {args.hotkey.upper()}")
+        log("Ready - press hotkey to dictate. Press ESC to exit.")
         
         try:
             listener = keyboard.Listener(on_press=on_press, on_release=on_release)

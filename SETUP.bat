@@ -89,6 +89,28 @@ if "%API_CHOICE%"=="1" (
     echo Get your Groq API key from: https://console.groq.com/keys
     echo.
     set /p API_KEY="Enter your Groq API key (starts with gsk-): "
+    
+    REM Strip common mistakes
+    set "API_KEY=%API_KEY:GROK_API_KEY=%"
+    set "API_KEY=%API_KEY:grok_api_key=%"
+    set "API_KEY=%API_KEY:GROQ_API_KEY=%"
+    set "API_KEY=%API_KEY:groq_api_key=%"
+    set "API_KEY=%API_KEY: =%"
+    
+    REM Validate Groq key format
+    echo %API_KEY% | findstr /B /C:"gsk-" >nul 2>&1
+    if errorlevel 1 (
+        echo %API_KEY% | findstr /B /C:"gsk_" >nul 2>&1
+        if errorlevel 1 (
+            echo.
+            echo ERROR: Invalid Groq API key format!
+            echo Groq keys should start with "gsk-" or "gsk_"
+            echo You entered: %API_KEY:~0,20%...
+            echo.
+            pause
+            goto :skip_api
+        )
+    )
 ) else if "%API_CHOICE%"=="2" (
     set PROVIDER=OpenAI
     set VAR_NAME=OPENAI_API_KEY
@@ -97,6 +119,23 @@ if "%API_CHOICE%"=="1" (
     echo Get your OpenAI API key from: https://platform.openai.com/api-keys
     echo.
     set /p API_KEY="Enter your OpenAI API key (starts with sk-): "
+    
+    REM Strip common mistakes
+    set "API_KEY=%API_KEY:OPENAI_API_KEY=%"
+    set "API_KEY=%API_KEY:openai_api_key=%"
+    set "API_KEY=%API_KEY: =%"
+    
+    REM Validate OpenAI key format
+    echo %API_KEY% | findstr /B /C:"sk-" >nul 2>&1
+    if errorlevel 1 (
+        echo.
+        echo ERROR: Invalid OpenAI API key format!
+        echo OpenAI keys should start with "sk-"
+        echo You entered: %API_KEY:~0,20%...
+        echo.
+        pause
+        goto :skip_api
+    )
 ) else (
     echo Invalid choice! Skipping API setup.
     set BACKEND=grok

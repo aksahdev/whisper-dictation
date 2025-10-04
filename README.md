@@ -122,13 +122,13 @@ whisper-dictate --trigger voice --silence-rms 0.007 --silence-stop-ms 1800 --bac
 
 ## 📁 Files
 
-- `INSTALL.bat` - **⭐ TRUE one-click installer** (auto-detects everything)
-- `SETUP.bat` - Advanced installer (with prompts)
+- **`INSTALL.bat`** - ⭐ THE installer (does everything!)
 - `whisper-dictate.exe` - Standalone executable (~20MB)
-- `run_dictate.bat` - Quick launcher  
 - `dictate_min.py` - Source code
+- `requirements.txt` - Python dependencies
+- `LICENSE` - MIT license
 
-**💡 Pro Tip:** For updates, just run `INSTALL.bat` or `SETUP.bat --quick` for instant reinstall!
+**💡 Pro Tip:** Updates? Just run `INSTALL.bat` again - it's instant!
 
 ## 🐛 Troubleshooting
 

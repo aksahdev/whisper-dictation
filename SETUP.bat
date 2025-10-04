@@ -1,8 +1,23 @@
 @echo off
 REM ========================================================================
 REM Whisper Dictate - Complete Windows Setup
-REM This script will set up everything you need in one go!
+REM One-click installer with smart defaults
 REM ========================================================================
+
+REM Check for --quick flag (skip all prompts for repeat installs)
+set QUICK_MODE=0
+if "%~1"=="--quick" set QUICK_MODE=1
+if "%~1"=="/quick" set QUICK_MODE=1
+if "%~1"=="-q" set QUICK_MODE=1
+
+if %QUICK_MODE%==1 (
+    echo.
+    echo ========================================================================
+    echo            WHISPER DICTATE - Quick Reinstall
+    echo ========================================================================
+    echo.
+    goto :start_install
+)
 
 echo.
 echo ========================================================================
@@ -12,12 +27,16 @@ echo.
 echo This will:
 echo   1. Install whisper-dictate.exe globally
 echo   2. Add to Windows PATH
-echo   3. Configure your API key
+echo   3. Configure your API key (if not already set)
 echo   4. Create desktop shortcuts
 echo   5. Set up AutoHotkey global hotkeys (optional)
 echo.
+echo TIP: For repeat installs, run: SETUP.bat --quick
+echo.
 pause
 echo.
+
+:start_install
 
 REM ===========================================
 REM Step 1: Check prerequisites
@@ -68,11 +87,35 @@ echo [Step 4/5] Configuring API Key...
 echo.
 
 REM Check if already configured
-set EXISTING_KEY=%GROK_API_KEY%
-if not "%EXISTING_KEY%"=="" (
-    echo API key already configured!
-    set /p RECONFIGURE="Reconfigure? (y/n): "
+set EXISTING_GROQ=%GROK_API_KEY%
+set EXISTING_OPENAI=%OPENAI_API_KEY%
+
+if not "%EXISTING_GROQ%"=="" (
+    echo ✓ Groq API key already configured: %EXISTING_GROQ:~0,20%...
+    set BACKEND=grok
+    if %QUICK_MODE%==1 goto :skip_api
+    set /p RECONFIGURE="Reconfigure API key? (y/n): "
     if /i not "%RECONFIGURE%"=="y" goto :skip_api
+)
+
+if not "%EXISTING_OPENAI%"=="" (
+    echo ✓ OpenAI API key already configured: %EXISTING_OPENAI:~0,20%...
+    set BACKEND=openai
+    if %QUICK_MODE%==1 goto :skip_api
+    set /p RECONFIGURE="Reconfigure API key? (y/n): "
+    if /i not "%RECONFIGURE%"=="y" goto :skip_api
+)
+
+REM No key configured, must set one
+if "%EXISTING_GROQ%"=="" if "%EXISTING_OPENAI%"=="" (
+    echo No API key found. Configuration required.
+    echo.
+    if %QUICK_MODE%==1 (
+        echo ERROR: Quick mode requires an existing API key!
+        echo Please run without --quick flag to configure.
+        pause
+        exit /b 1
+    )
 )
 
 echo Choose your API provider:
@@ -164,11 +207,20 @@ REM ===========================================
 echo [Step 5/5] Creating shortcuts...
 echo.
 
-REM Desktop shortcuts
-set DESKTOP=%USERPROFILE%\Desktop
+REM Get proper Desktop location (handles OneDrive redirects)
+for /f "usebackq tokens=3*" %%A in (`reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" /v Desktop 2^>nul`) do set DESKTOP=%%A %%B
+set DESKTOP=%DESKTOP:~0,-1%
+call set DESKTOP=%DESKTOP%
+
+REM Fallback to standard location if reg query failed
+if "%DESKTOP%"=="" set DESKTOP=%USERPROFILE%\Desktop
 
 REM Ensure Desktop folder exists
-if not exist "%DESKTOP%" mkdir "%DESKTOP%"
+if not exist "%DESKTOP%" (
+    echo WARNING: Desktop folder not found at %DESKTOP%
+    echo Creating Start Menu shortcuts instead...
+    set DESKTOP=%APPDATA%\Microsoft\Windows\Start Menu\Programs
+)
 
 REM Voice mode shortcut
 powershell -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('%DESKTOP%\Whisper Dictate (Voice).lnk'); $Shortcut.TargetPath = '%INSTALL_DIR%\whisper-dictate.exe'; $Shortcut.Arguments = '--trigger voice --backend %BACKEND%'; $Shortcut.WorkingDirectory = '%INSTALL_DIR%'; $Shortcut.Description = 'Voice-activated dictation'; $Shortcut.Save()" 2>nul
@@ -179,12 +231,21 @@ powershell -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut 
 REM Hotkey toggle mode shortcut
 powershell -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('%DESKTOP%\Whisper Dictate (Numpad5 Toggle).lnk'); $Shortcut.TargetPath = '%INSTALL_DIR%\whisper-dictate.exe'; $Shortcut.Arguments = '--trigger key --mode toggle --hotkey numpad5 --backend %BACKEND%'; $Shortcut.WorkingDirectory = '%INSTALL_DIR%'; $Shortcut.Description = 'Toggle recording with Numpad5'; $Shortcut.Save()" 2>nul
 
-echo ✓ Desktop shortcuts created!
+if exist "%DESKTOP%\Whisper Dictate (Voice).lnk" (
+    echo ✓ Shortcuts created successfully!
+) else (
+    echo WARNING: Shortcuts may not have been created properly
+    echo You can still run: whisper-dictate --trigger voice
+)
 echo.
 
 REM ===========================================
 REM Optional: AutoHotkey Setup
 REM ===========================================
+
+REM Skip AutoHotkey prompt in quick mode
+if %QUICK_MODE%==1 goto :skip_ahk
+
 echo.
 echo ========================================================================
 echo Optional: Global Hotkey Setup with AutoHotkey
@@ -240,6 +301,35 @@ if /i "%SETUP_AHK%"=="y" (
         echo   Win+F11: Numpad5 hold mode
     )
 )
+
+:skip_ahk
+
+REM ===========================================
+REM Test Installation
+REM ===========================================
+echo.
+echo [Testing] Verifying installation...
+echo.
+
+REM Test if binary exists and runs
+"%INSTALL_DIR%\whisper-dictate.exe" --help >nul 2>&1
+if errorlevel 1 (
+    echo WARNING: Binary test failed. Installation may be incomplete.
+) else (
+    echo ✓ Binary is working correctly
+)
+
+REM Test API key
+if not "%EXISTING_GROQ%"=="" (
+    echo ✓ API key configured: Groq
+    set BACKEND=grok
+)
+if not "%EXISTING_OPENAI%"=="" (
+    echo ✓ API key configured: OpenAI  
+    set BACKEND=openai
+)
+
+echo.
 
 REM ===========================================
 REM Installation Complete!

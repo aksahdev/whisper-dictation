@@ -13,19 +13,23 @@ Fast, accurate speech-to-text dictation for Windows 11. Uses Groq or OpenAI Whis
 - 🚪 **ESC to exit** - Clean exit from any mode
 - 🔄 **Continuous operation** - Runs indefinitely until you stop it
 
-## 🚀 Installation (One Command!)
+## 🚀 Installation (Literally One Click!)
 
 1. **Download and extract** this repository
-2. **Double-click `SETUP.bat`**
-3. Follow the wizard (installs binary, sets API key, creates shortcuts)
-4. Done! ✅
+2. **Double-click `INSTALL.bat`** 
+3. Done! ✅
 
-The installer will:
-- Install `whisper-dictate.exe` globally
-- Add to Windows PATH
-- Configure your API key (Groq or OpenAI)
-- Create desktop shortcuts
-- Optionally set up global hotkeys (Win+F12, Win+F11)
+That's it! The installer automatically:
+- ✅ Detects if you've already set up an API key (skips if yes)
+- ✅ Installs `whisper-dictate.exe` globally
+- ✅ Adds to Windows PATH
+- ✅ Creates desktop shortcuts
+- ✅ Tests the installation
+- ✅ Runs in seconds for repeat installs
+
+**First Time?** It will prompt for your API key once (Groq or OpenAI).
+
+**Already Installed?** Just double-click `INSTALL.bat` again - it auto-detects and updates instantly!
 
 ## 📖 Quick Start
 
@@ -118,10 +122,13 @@ whisper-dictate --trigger voice --silence-rms 0.007 --silence-stop-ms 1800 --bac
 
 ## 📁 Files
 
+- `INSTALL.bat` - **⭐ TRUE one-click installer** (auto-detects everything)
+- `SETUP.bat` - Advanced installer (with prompts)
 - `whisper-dictate.exe` - Standalone executable (~20MB)
-- `SETUP.bat` - One-click installer
-- `run_dictate.bat` - Quick launcher
+- `run_dictate.bat` - Quick launcher  
 - `dictate_min.py` - Source code
+
+**💡 Pro Tip:** For updates, just run `INSTALL.bat` or `SETUP.bat --quick` for instant reinstall!
 
 ## 🐛 Troubleshooting
 

@@ -128,14 +128,17 @@ echo.
 REM Desktop shortcuts
 set DESKTOP=%USERPROFILE%\Desktop
 
+REM Ensure Desktop folder exists
+if not exist "%DESKTOP%" mkdir "%DESKTOP%"
+
 REM Voice mode shortcut
-powershell -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('%DESKTOP%\Whisper Dictate (Voice).lnk'); $Shortcut.TargetPath = '%INSTALL_DIR%\whisper-dictate.exe'; $Shortcut.Arguments = '--trigger voice --backend %BACKEND%'; $Shortcut.WorkingDirectory = '%INSTALL_DIR%'; $Shortcut.Description = 'Voice-activated dictation'; $Shortcut.Save()"
+powershell -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('%DESKTOP%\Whisper Dictate (Voice).lnk'); $Shortcut.TargetPath = '%INSTALL_DIR%\whisper-dictate.exe'; $Shortcut.Arguments = '--trigger voice --backend %BACKEND%'; $Shortcut.WorkingDirectory = '%INSTALL_DIR%'; $Shortcut.Description = 'Voice-activated dictation'; $Shortcut.Save()" 2>nul
 
 REM Hotkey hold mode shortcut
-powershell -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('%DESKTOP%\Whisper Dictate (Numpad5 Hold).lnk'); $Shortcut.TargetPath = '%INSTALL_DIR%\whisper-dictate.exe'; $Shortcut.Arguments = '--trigger key --mode hold --hotkey numpad5 --backend %BACKEND%'; $Shortcut.WorkingDirectory = '%INSTALL_DIR%'; $Shortcut.Description = 'Hold Numpad5 to dictate'; $Shortcut.Save()"
+powershell -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('%DESKTOP%\Whisper Dictate (Numpad5 Hold).lnk'); $Shortcut.TargetPath = '%INSTALL_DIR%\whisper-dictate.exe'; $Shortcut.Arguments = '--trigger key --mode hold --hotkey numpad5 --backend %BACKEND%'; $Shortcut.WorkingDirectory = '%INSTALL_DIR%'; $Shortcut.Description = 'Hold Numpad5 to dictate'; $Shortcut.Save()" 2>nul
 
 REM Hotkey toggle mode shortcut
-powershell -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('%DESKTOP%\Whisper Dictate (Numpad5 Toggle).lnk'); $Shortcut.TargetPath = '%INSTALL_DIR%\whisper-dictate.exe'; $Shortcut.Arguments = '--trigger key --mode toggle --hotkey numpad5 --backend %BACKEND%'; $Shortcut.WorkingDirectory = '%INSTALL_DIR%'; $Shortcut.Description = 'Toggle recording with Numpad5'; $Shortcut.Save()"
+powershell -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('%DESKTOP%\Whisper Dictate (Numpad5 Toggle).lnk'); $Shortcut.TargetPath = '%INSTALL_DIR%\whisper-dictate.exe'; $Shortcut.Arguments = '--trigger key --mode toggle --hotkey numpad5 --backend %BACKEND%'; $Shortcut.WorkingDirectory = '%INSTALL_DIR%'; $Shortcut.Description = 'Toggle recording with Numpad5'; $Shortcut.Save()" 2>nul
 
 echo ✓ Desktop shortcuts created!
 echo.

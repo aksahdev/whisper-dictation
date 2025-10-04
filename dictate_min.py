@@ -18,6 +18,7 @@ import queue
 import sys
 import tempfile
 import time
+import threading
 from pathlib import Path
 
 # Ensure third-party modules can be imported even when launched via a wrapper that
@@ -298,8 +299,36 @@ def main(argv: list[str] | None = None) -> None:
     # Trigger
     text = ""
     if args.trigger == "voice":
-        log("Voice mode active - will continuously listen for speech")
+        log("Voice mode active - will continuously listen for speech (async transcription)")
         log("Press Ctrl+C to exit")
+        
+        def process_transcription(wav_path, backend, api_key_g, api_key_o, print_only, no_trailing):
+            """Process transcription in background thread"""
+            try:
+                if backend == "grok":
+                    text = transcribe_groq(wav_path, api_key_g)
+                else:
+                    text = transcribe_openai(wav_path, api_key_o)
+                
+                if text:
+                    if not no_trailing:
+                        text += " "
+                    
+                    log(f"Transcribed: {text[:80]!r}")
+                    
+                    if print_only:
+                        print(text)
+                    else:
+                        if not type_text(text):
+                            error("Failed to inject text.")
+                
+            except Exception as e:
+                error(f"Transcription error: {e}")
+            finally:
+                try:
+                    wav_path.unlink(missing_ok=True)
+                except Exception:
+                    pass
         
         try:
             while True:
@@ -314,33 +343,16 @@ def main(argv: list[str] | None = None) -> None:
                     warn("Nothing recorded. Waiting for next speech...")
                     continue
                 
-                try:
-                    if args.backend == "grok":
-                        text = transcribe_groq(wav, api_key_groq)
-                    else:
-                        text = transcribe_openai(wav, api_key_openai)
-                    
-                    if text:
-                        if not args.no_trailing_space:
-                            text += " "
-                        
-                        log(f"Transcribed: {text[:80]!r}")
-                        
-                        if args.print_only:
-                            print(text)
-                        else:
-                            if not type_text(text):
-                                error("Failed to inject text.")
-                        
-                        log("Ready for next speech...")
-                    
-                except Exception as e:
-                    error(f"Transcription error: {e}")
-                finally:
-                    try:
-                        wav.unlink(missing_ok=True)
-                    except Exception:
-                        pass
+                # Start transcription in background thread
+                log("Processing... (you can speak again)")
+                thread = threading.Thread(
+                    target=process_transcription,
+                    args=(wav, args.backend, api_key_groq, api_key_openai, args.print_only, args.no_trailing_space),
+                    daemon=True
+                )
+                thread.start()
+                # Continue immediately to next recording without waiting
+                
         except KeyboardInterrupt:
             print()
             log("Exiting voice mode...")
@@ -383,6 +395,33 @@ def main(argv: list[str] | None = None) -> None:
                 rec_active["v"] = True
                 log("Recording (hotkey)...")
 
+        def process_hotkey_transcription(wav_path, backend, api_key_g, api_key_o, print_only, no_trailing):
+            """Process hotkey transcription in background thread"""
+            try:
+                if backend == "grok":
+                    t = transcribe_groq(wav_path, api_key_g)
+                else:
+                    t = transcribe_openai(wav_path, api_key_o)
+                
+                # Type or print the transcription
+                if not no_trailing:
+                    t += " "
+                
+                log(f"Transcribed: {t[:80]!r}")
+                
+                if not print_only:
+                    if not type_text(t):
+                        error("Failed to inject text.")
+                else:
+                    print(t)
+            except Exception as e:
+                error(f"Transcription error: {e}")
+            finally:
+                try:
+                    wav_path.unlink(missing_ok=True)
+                except Exception:
+                    pass
+
         def stop_rec_and_transcribe():
             if rec_active["v"]:
                 wav2 = rec.stop()
@@ -390,28 +429,16 @@ def main(argv: list[str] | None = None) -> None:
                 if wav2 is None:
                     warn("Silent/empty recording.")
                     return
-                try:
-                    if args.backend == "grok":
-                        t = transcribe_groq(wav2, api_key_groq)
-                    else:
-                        t = transcribe_openai(wav2, api_key_openai)
-                    
-                    # Type or print the transcription
-                    if not args.no_trailing_space:
-                        t += " "
-                    
-                    log(f"Transcribed: {t[:80]!r}")
-                    
-                    if not args.print_only:
-                        if not type_text(t):
-                            error("Failed to inject text. See TROUBLESHOOTING.md.")
-                    else:
-                        print(t)
-                finally:
-                    try:
-                        wav2.unlink(missing_ok=True)
-                    except Exception:
-                        pass
+                
+                # Start transcription in background thread
+                log("Processing... (ready for next recording)")
+                thread = threading.Thread(
+                    target=process_hotkey_transcription,
+                    args=(wav2, args.backend, api_key_groq, api_key_openai, args.print_only, args.no_trailing_space),
+                    daemon=True
+                )
+                thread.start()
+                # Return immediately without waiting for transcription
 
         def matches_hotkey(k) -> bool:
             # Direct comparison

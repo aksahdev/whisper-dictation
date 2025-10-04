@@ -298,26 +298,53 @@ def main(argv: list[str] | None = None) -> None:
     # Trigger
     text = ""
     if args.trigger == "voice":
-        wav = record_once(
-            samplerate=args.samplerate,
-            silence_rms=args.silence_rms,
-            min_speech_ms=args.min_speech_ms,
-            silence_ms_to_stop=args.silence_stop_ms,
-            max_ms=args.max_ms,
-        )
-        if wav is None:
-            error("Nothing recorded. Try speaking louder/longer or adjust thresholds.")
-            sys.exit(1)
+        log("Voice mode active - will continuously listen for speech")
+        log("Press Ctrl+C to exit")
+        
         try:
-            if args.backend == "grok":
-                text = transcribe_groq(wav, api_key_groq)
-            else:
-                text = transcribe_openai(wav, api_key_openai)
-        finally:
-            try:
-                wav.unlink(missing_ok=True)
-            except Exception:
-                pass
+            while True:
+                wav = record_once(
+                    samplerate=args.samplerate,
+                    silence_rms=args.silence_rms,
+                    min_speech_ms=args.min_speech_ms,
+                    silence_ms_to_stop=args.silence_stop_ms,
+                    max_ms=args.max_ms,
+                )
+                if wav is None:
+                    warn("Nothing recorded. Waiting for next speech...")
+                    continue
+                
+                try:
+                    if args.backend == "grok":
+                        text = transcribe_groq(wav, api_key_groq)
+                    else:
+                        text = transcribe_openai(wav, api_key_openai)
+                    
+                    if text:
+                        if not args.no_trailing_space:
+                            text += " "
+                        
+                        log(f"Transcribed: {text[:80]!r}")
+                        
+                        if args.print_only:
+                            print(text)
+                        else:
+                            if not type_text(text):
+                                error("Failed to inject text.")
+                        
+                        log("Ready for next speech...")
+                    
+                except Exception as e:
+                    error(f"Transcription error: {e}")
+                finally:
+                    try:
+                        wav.unlink(missing_ok=True)
+                    except Exception:
+                        pass
+        except KeyboardInterrupt:
+            print()
+            log("Exiting voice mode...")
+            sys.exit(0)
     else:
         # key trigger
         try:
@@ -453,23 +480,9 @@ def main(argv: list[str] | None = None) -> None:
         # Exit after cleanup in hotkey mode
         sys.exit(0)
 
-    # Voice mode - handle single transcription
-    if not text:
-        warn("Empty transcription.")
-        sys.exit(0)
-
-    if not args.no_trailing_space:
-        text += " "
-
-    log(f"Transcribed: {text[:80]!r}")
-
-    if args.print_only:
-        print(text)
-        return
-
-    if not type_text(text):
-        error("Failed to inject text. See TROUBLESHOOTING.md.")
-        sys.exit(2)
+    # This code is now unreachable - voice mode has its own loop above
+    # and hotkey mode exits with sys.exit(0)
+    pass
 
 
 if __name__ == "__main__":

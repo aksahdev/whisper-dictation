@@ -90,6 +90,18 @@ The installer will prompt you for your API key. Choose one:
 
 Your API key is saved as a Windows environment variable (permanent, secure).
 
+### Update/Change API Key
+Need to change your API key? Just run:
+```powershell
+.\setup-api-key.bat
+```
+
+This quick tool lets you:
+- ✅ Set/update Groq or OpenAI keys
+- ✅ Check which keys are currently set
+- ✅ Remove keys if needed
+- ✅ Skip the full installation
+
 ### Manual Setup
 If needed, you can set it manually:
 
@@ -123,6 +135,7 @@ whisper-dictate --trigger voice --silence-rms 0.007 --silence-stop-ms 1800 --bac
 ## 📁 Files
 
 - **`INSTALL.bat`** - ⭐ THE installer (does everything!)
+- **`setup-api-key.bat`** - Quick API key updater (no full reinstall needed)
 - `whisper-dictate.exe` - Standalone executable (~20MB)
 - `dictate_min.py` - Source code
 - `requirements.txt` - Python dependencies

@@ -1,4 +1,4 @@
-# Python packages
+# Python packages for Windows
 openai
 sounddevice
 soundfile
@@ -7,11 +7,11 @@ numpy
 groq
 pyautogui
 python-dotenv
+pyperclip
+pywin32
 
-# System packages (install with apt/package manager):
-# For Wayland (Hyprland, GNOME Wayland, etc.):
-#   sudo apt install wtype ydotool ydotoold
-# For X11 (traditional desktops):
-#   sudo apt install xdotool
-# 
-# The script will automatically detect your environment and use the appropriate tool.
+# Additional Windows notes:
+# - pyautogui is the primary text input method (recommended)
+# - pynput provides keyboard input and is always available
+# - pywin32 provides clipboard fallback (optional but recommended)
+# - pyperclip provides cross-platform clipboard (alternative to pywin32)

@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
-"""Minimal one-shot dictation script (Wayland/X11 friendly).
+"""Minimal one-shot dictation script (Windows).
 
 Flow:
   1) Start recording immediately
   2) Auto-stop on silence
   3) Transcribe (Groq default; OpenAI optional)
-  4) Type result into focused window (Wayland/X11 autodetect)
+  4) Type result into focused window (Windows)
 
-No global hotkeys; integrate with Hyprland via a bind that runs this script.
+Supports voice-activated and hotkey-triggered modes.
 """
 from __future__ import annotations
 
@@ -217,68 +217,57 @@ def transcribe_openai(wav_path: Path, api_key: str | None) -> str:
     return resp.text.strip()
 
 
-def ensure_ydotoold() -> None:
-    try:
-        import subprocess
-        if subprocess.run(["pgrep", "ydotoold"], capture_output=True).returncode != 0:
-            # best-effort start (no sudo prompt here)
-            subprocess.Popen(["ydotoold"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            time.sleep(0.5)
-    except Exception:
-        pass
 
 
 def type_text(text: str) -> bool:
-    """Type text into focused window. Returns True on success."""
-    import subprocess
-
-    session_type = (os.environ.get("XDG_SESSION_TYPE") or "").lower()
-    wayland = bool(os.environ.get("WAYLAND_DISPLAY")) or session_type == "wayland"
-    x11 = bool(os.environ.get("DISPLAY")) or session_type == "x11"
-
-    # Wayland first (Hyprland)
-    if wayland:
-        # ydotool
-        if subprocess.run(["which", "ydotool"], capture_output=True).returncode == 0:
-            ensure_ydotoold()
-            try:
-                r = subprocess.run(["ydotool", "type", text], capture_output=True, text=True, timeout=10)
-                if r.returncode == 0:
-                    return True
-            except Exception:
-                pass
-        # wtype
-        if subprocess.run(["which", "wtype"], capture_output=True).returncode == 0:
-            try:
-                r = subprocess.run(["wtype", text], capture_output=True, text=True, timeout=10)
-                if r.returncode == 0:
-                    return True
-            except Exception:
-                pass
-
-    # X11
-    if x11 and subprocess.run(["which", "xdotool"], capture_output=True).returncode == 0:
-        try:
-            r = subprocess.run(["xdotool", "type", "--delay", "10", text], capture_output=True, text=True, timeout=10)
-            if r.returncode == 0:
-                return True
-        except Exception:
-            pass
-
-    # Fallback: clipboard
+    """Type text into focused window (Windows). Returns True on success."""
+    
+    # Try pyautogui first (cross-platform, works well on Windows)
     try:
-        if wayland and subprocess.run(["which", "wl-copy"], capture_output=True).returncode == 0:
-            r = subprocess.run(["wl-copy"], input=text, text=True, capture_output=True)
-            if r.returncode == 0:
-                warn("Typed via clipboard (wl-copy). Paste manually (Ctrl+V).")
-                return True
-        if x11 and subprocess.run(["which", "xclip"], capture_output=True).returncode == 0:
-            r = subprocess.run(["xclip", "-selection", "clipboard"], input=text, text=True, capture_output=True)
-            if r.returncode == 0:
-                warn("Typed via clipboard (xclip). Paste manually (Ctrl+V).")
-                return True
-    except Exception:
+        import pyautogui  # type: ignore
+        pyautogui.PAUSE = 0.01
+        pyautogui.write(text, interval=0.01)
+        log("Typed text with pyautogui")
+        return True
+    except ImportError:
         pass
+    except Exception as e:
+        warn(f"pyautogui error: {e}")
+    
+    # Try pynput as fallback (already a dependency)
+    try:
+        from pynput.keyboard import Controller
+        controller = Controller()
+        controller.type(text)
+        log("Typed text with pynput")
+        return True
+    except Exception as e:
+        warn(f"pynput typing error: {e}")
+    
+    # Try Windows clipboard as last resort
+    try:
+        import win32clipboard  # type: ignore
+        win32clipboard.OpenClipboard()
+        win32clipboard.EmptyClipboard()
+        win32clipboard.SetClipboardText(text, win32clipboard.CF_UNICODETEXT)
+        win32clipboard.CloseClipboard()
+        warn("Text copied to clipboard (pywin32). Paste with Ctrl+V.")
+        return True
+    except ImportError:
+        pass
+    except Exception as e:
+        warn(f"Clipboard (pywin32) error: {e}")
+    
+    # Final fallback: use pyperclip
+    try:
+        import pyperclip  # type: ignore
+        pyperclip.copy(text)
+        warn("Text copied to clipboard (pyperclip). Paste with Ctrl+V.")
+        return True
+    except ImportError:
+        pass
+    except Exception as e:
+        warn(f"pyperclip error: {e}")
 
     return False
 

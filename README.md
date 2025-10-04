@@ -1,12 +1,27 @@
-# whisper-dictate (Hyprland-friendly)
+# whisper-dictate
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Minimal, reliable speech-to-text dictation for Linux. Defaults to Groq STT. Works on Wayland (Hyprland) and X11. Two ways to trigger dictation:
+Minimal, reliable speech-to-text dictation. Defaults to Groq STT. Works on Linux (Wayland/X11) and Windows 11. Two ways to trigger dictation:
 - Voice-activated one-shot (auto start/stop on speech/silence)
 - Hotkey push-to-talk or toggle (default: numpad5)
 
 Core script: `dictate_min.py`
+
+## 🪟 Windows 11 Support
+
+This branch (`windows-11-support`) is optimized for Windows 11! See:
+- **[WINDOWS_SETUP.md](WINDOWS_SETUP.md)** - Step-by-step Windows setup guide
+- **[README_WINDOWS.md](README_WINDOWS.md)** - Complete Windows usage documentation
+
+**Quick start on Windows:**
+1. Run `setup_windows.bat`
+2. Create `.env` file with API keys
+3. Double-click `run_dictate.bat`
+
+---
+
+## Linux Installation (Original)
 
 ## Features
 - Groq backend by default (fast), OpenAI optional

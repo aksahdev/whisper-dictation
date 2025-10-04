@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
 # See LICENSE for details.
-"""Whisper speech-to-text dictation script for Linux.
+"""Whisper speech-to-text dictation script for Windows.
 
 Features
 --------
@@ -11,7 +11,6 @@ Features
 
 Install deps
 ------------
-    sudo apt install xdotool wtype
     pip install -r requirements.txt
 
 Usage
@@ -53,82 +52,66 @@ except ImportError:
 # ------------------------------------------------------------------------
 
 def _type_text(text: str) -> None:
-    """Type *text* into the active window using available tools."""
+    """Type *text* into the active window using Windows-compatible methods."""
     import time
     
     # Small delay to ensure the window is ready to receive input
     time.sleep(0.1)
     
-    session_type = os.environ.get("XDG_SESSION_TYPE", "").lower()
-    wayland_display = os.environ.get("WAYLAND_DISPLAY")
-    x11_display = os.environ.get("DISPLAY")
+    print(f"[DEBUG] Platform: Windows", file=sys.stderr)
     
-    print(f"[DEBUG] Session type: {session_type}, Wayland: {wayland_display}, X11: {x11_display}", file=sys.stderr)
-    
-    # Wayland environment - try Wayland-specific tools first
-    if session_type == "wayland" or wayland_display:
-        # Try wtype first (often more reliable than ydotool)
-        if subprocess.run(["which", "wtype"], capture_output=True).returncode == 0:
-            try:
-                result = subprocess.run(["wtype", text], 
-                                      capture_output=True, text=True, timeout=5)
-                if result.returncode != 0:
-                    print(f"[DEBUG] wtype failed: {result.stderr}", file=sys.stderr)
-                else:
-                    print(f"[DEBUG] Successfully typed with wtype: {text[:50]}...", file=sys.stderr)
-                    return
-            except subprocess.TimeoutExpired:
-                print("[ERROR] wtype timed out", file=sys.stderr)
-        
-        # Fallback to ydotool for Wayland
-        if subprocess.run(["which", "ydotool"], capture_output=True).returncode == 0:
-            try:
-                # Check if ydotoold is running, if not start it
-                daemon_check = subprocess.run(["pgrep", "ydotoold"], capture_output=True)
-                if daemon_check.returncode != 0:
-                    print("[INFO] Starting ydotool daemon...", file=sys.stderr)
-                    subprocess.Popen(["ydotoold"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                    time.sleep(0.5)  # Give daemon time to start
-                
-                result = subprocess.run(["ydotool", "type", text], 
-                                      capture_output=True, text=True, timeout=5)
-                if result.returncode != 0:
-                    print(f"[DEBUG] ydotool failed: {result.stderr}", file=sys.stderr)
-                else:
-                    print(f"[DEBUG] Successfully typed with ydotool: {text[:50]}...", file=sys.stderr)
-                    return
-            except subprocess.TimeoutExpired:
-                print("[ERROR] ydotool timed out", file=sys.stderr)
-            except Exception as e:
-                print(f"[DEBUG] ydotool error: {e}", file=sys.stderr)
-
-    # X11 environment or fallback
-    if session_type == "x11" or x11_display or not (session_type == "wayland" or wayland_display):
-        if subprocess.run(["which", "xdotool"], capture_output=True).returncode == 0:
-            try:
-                result = subprocess.run(["xdotool", "type", "--delay", "10", text], 
-                                      capture_output=True, text=True, timeout=5)
-                if result.returncode != 0:
-                    print(f"[DEBUG] xdotool failed: {result.stderr}", file=sys.stderr)
-                else:
-                    print(f"[DEBUG] Successfully typed with xdotool: {text[:50]}...", file=sys.stderr)
-                    return
-            except subprocess.TimeoutExpired:
-                print("[ERROR] xdotool timed out", file=sys.stderr)
-
-    # Python fallback (works on both X11 and Wayland in some cases)
+    # Try pyautogui first (cross-platform, works well on Windows)
     try:
         import pyautogui  # type: ignore
-        pyautogui.typewrite(text, interval=0.01)
+        # Configure pyautogui for Windows
+        pyautogui.PAUSE = 0.01  # Small pause between keystrokes
+        pyautogui.write(text, interval=0.01)
         print(f"[DEBUG] Successfully typed with pyautogui: {text[:50]}...", file=sys.stderr)
         return
     except ImportError:
-        pass
+        print("[DEBUG] pyautogui not available", file=sys.stderr)
+    except Exception as e:
+        print(f"[DEBUG] pyautogui error: {e}", file=sys.stderr)
     
-    print("[ERROR] No working tool found to emit keystrokes. Please install:", file=sys.stderr)
-    print("  - For Wayland: ydotool + ydotoold, or wtype", file=sys.stderr)
-    print("  - For X11: xdotool", file=sys.stderr)
-    print("  - Universal: pip install pyautogui", file=sys.stderr)
+    # Try pynput as fallback (already a dependency)
+    try:
+        from pynput.keyboard import Controller
+        controller = Controller()
+        controller.type(text)
+        print(f"[DEBUG] Successfully typed with pynput: {text[:50]}...", file=sys.stderr)
+        return
+    except Exception as e:
+        print(f"[DEBUG] pynput typing error: {e}", file=sys.stderr)
+    
+    # Try Windows clipboard as last resort
+    try:
+        import win32clipboard  # type: ignore
+        win32clipboard.OpenClipboard()
+        win32clipboard.EmptyClipboard()
+        win32clipboard.SetClipboardText(text, win32clipboard.CF_UNICODETEXT)
+        win32clipboard.CloseClipboard()
+        print("[WARN] Text copied to clipboard. Paste manually with Ctrl+V.", file=sys.stderr)
+        return
+    except ImportError:
+        print("[DEBUG] pywin32 not available for clipboard fallback", file=sys.stderr)
+    except Exception as e:
+        print(f"[DEBUG] Clipboard error: {e}", file=sys.stderr)
+    
+    # Final fallback: use pyperclip
+    try:
+        import pyperclip  # type: ignore
+        pyperclip.copy(text)
+        print("[WARN] Text copied to clipboard. Paste manually with Ctrl+V.", file=sys.stderr)
+        return
+    except ImportError:
+        pass
+    except Exception as e:
+        print(f"[DEBUG] pyperclip error: {e}", file=sys.stderr)
+    
+    print("[ERROR] No working tool found to emit keystrokes on Windows. Please install:", file=sys.stderr)
+    print("  pip install pyautogui", file=sys.stderr)
+    print("  or pip install pywin32", file=sys.stderr)
+    print("  or pip install pyperclip", file=sys.stderr)
 
 # ---------------------------------------------------------------------------
 # Recorder class

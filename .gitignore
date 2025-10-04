@@ -1,35 +1,47 @@
 # Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist-info/
 
-# Environments
+# Virtual environments
 venv/
 .venv/
-whisper-env/
+env/
+ENV/
 
-# Build artifacts
+# PyInstaller
 build/
 dist/
 *.spec
 
-# OS/editor
-.DS_Store
-.idea/
+# Environment files
+.env
+.env.local
+
+# IDE
 .vscode/
+.idea/
+*.swp
+*.swo
+*~
 
-# Secrets
-.env
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
 
-# Local environment variables
-.env
+# Test files
+test_*.py
+*_test.py
 
-# Python virtual environments
-.venv/
-venv/
-ENV/
+# Windows
+*.lnk
 
-# Python bytecode/cache
-__pycache__/
-*.pyc
+# Temporary
+*.tmp
+*.bak
+*.log

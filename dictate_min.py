@@ -292,9 +292,21 @@ def main(argv: list[str] | None = None) -> None:
 
     args = p.parse_args(argv)
 
-    # Keys
+    # Keys - checks Windows environment variables automatically
     api_key_groq = os.getenv("GROK_API_KEY")
     api_key_openai = os.getenv("OPENAI_API_KEY")
+    
+    # Validate API key is present
+    if args.backend == "grok" and not api_key_groq:
+        error("GROK_API_KEY not found!")
+        error("Run 'setup-api-key.bat' to configure your API key (one-time setup)")
+        error("Or get your key from: https://console.groq.com/keys")
+        sys.exit(1)
+    elif args.backend == "openai" and not api_key_openai:
+        error("OPENAI_API_KEY not found!")
+        error("Run 'setup-api-key.bat' to configure your API key (one-time setup)")
+        error("Or get your key from: https://platform.openai.com/api-keys")
+        sys.exit(1)
 
     # Trigger
     text = ""

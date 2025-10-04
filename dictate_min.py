@@ -280,7 +280,7 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--samplerate", type=int, default=16_000)
     p.add_argument("--silence-rms", type=float, default=0.015, help="RMS threshold to detect speech")
     p.add_argument("--min-speech-ms", type=int, default=400, help="Minimum captured speech before accepting")
-    p.add_argument("--silence-stop-ms", type=int, default=700, help="Silence duration to stop after speech")
+    p.add_argument("--silence-stop-ms", type=int, default=1500, help="Silence duration to stop after speech (1500ms = 1.5 seconds)")
     p.add_argument("--max-ms", type=int, default=20_000, help="Hard stop max recording duration")
     p.add_argument("--no-trailing-space", action="store_true", help="Do not add trailing space after text")
     p.add_argument("--print-only", action="store_true", help="Print text only (do not type)")

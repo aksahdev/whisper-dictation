@@ -21,10 +21,12 @@ echo.
 
 REM Create virtual environment
 echo Creating virtual environment...
-if exist venv (
+if exist .venv (
     echo Virtual environment already exists, skipping...
+) else if exist venv (
+    echo Virtual environment already exists (old venv), skipping...
 ) else (
-    python -m venv venv
+    python -m venv .venv
     if errorlevel 1 (
         echo ERROR: Failed to create virtual environment
         pause
@@ -36,7 +38,11 @@ echo.
 
 REM Activate virtual environment and install packages
 echo Installing Python packages...
-call venv\Scripts\activate.bat
+if exist .venv\Scripts\activate.bat (
+    call .venv\Scripts\activate.bat
+) else (
+    call venv\Scripts\activate.bat
+)
 if errorlevel 1 (
     echo ERROR: Failed to activate virtual environment
     pause

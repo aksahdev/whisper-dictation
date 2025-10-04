@@ -269,9 +269,10 @@ def main(argv: list[str] | None = None) -> None:
     if args.daemon:
         setup_daemon(args.log_file)
 
-    # Map special hotkey names to virtual keycodes
+    # Map special hotkey names to virtual keycodes (Windows-compatible)
+    import platform
     special_vk = {
-        "numpad5": 65437,
+        "numpad5": 12 if platform.system() == "Windows" else 65437,  # VK_CLEAR on Windows
     }
 
     # Load API key from environment variables exclusively
@@ -297,18 +298,40 @@ def main(argv: list[str] | None = None) -> None:
     hotkey_key = None
     if args.hotkey.lower() in special_vk:
         hotkey_key = keyboard.KeyCode.from_vk(special_vk[args.hotkey.lower()])
+        print(f"[INFO] Using virtual key code {special_vk[args.hotkey.lower()]} for {args.hotkey}")
     else:
         hotkey_key = getattr(keyboard.Key, args.hotkey.lower(), None)
         if hotkey_key is None:
-            hotkey_key = keyboard.KeyCode.from_char(args.hotkey)
+            try:
+                hotkey_key = keyboard.KeyCode.from_char(args.hotkey)
+            except Exception as e:
+                print(f"[ERROR] Invalid hotkey: {args.hotkey} - {e}")
+                sys.exit(2)
+
+    def matches_hotkey(key):
+        """Check if key matches the configured hotkey"""
+        # Direct comparison
+        if key == hotkey_key:
+            return True
+        # Check virtual key code for special keys
+        if hasattr(key, 'vk') and hasattr(hotkey_key, 'vk'):
+            if key.vk is not None and hotkey_key.vk is not None:
+                if key.vk == hotkey_key.vk:
+                    return True
+        return False
 
     def on_press(key):
         # Show current options if '?' is pressed
         if hasattr(key, 'char') and key.char == '?':
             print(f"[INFO] Backend: {args.backend}, Mode: {mode}, Hotkey: {args.hotkey.upper()}")
             return
+        
+        # Debug output for numpad5
+        if args.hotkey.lower() == "numpad5" and hasattr(key, 'vk'):
+            print(f"[DEBUG] Key: {key}, vk={getattr(key, 'vk', None)}, hotkey_vk={getattr(hotkey_key, 'vk', None)}")
+        
         # Toggle recording on hotkey press
-        if key == hotkey_key:
+        if matches_hotkey(key):
             if mode == "toggle":
                 if not rec._flag:
                     rec.start()
@@ -335,7 +358,7 @@ def main(argv: list[str] | None = None) -> None:
     # Setup listener based on mode
     if mode == "hold":
         def on_release(key):
-            if key == hotkey_key and rec._flag:
+            if matches_hotkey(key) and rec._flag:
                 wav = rec.stop()
                 if wav is None:
                     print("[WARN] Silent recording – ignored.")
@@ -352,13 +375,21 @@ def main(argv: list[str] | None = None) -> None:
     else:
         listener = keyboard.Listener(on_press=on_press)
 
-    with listener as listener:
-        try:
-            listener.join()
-        except KeyboardInterrupt:
-            print("\n[INFO] Exiting.")
-        finally:
-            rec.close()
+    print("[INFO] Keyboard listener started. Waiting for hotkey...")
+    print("[INFO] TIP: Try pressing the key multiple times if it doesn't work immediately")
+    
+    try:
+        with listener as listener:
+            try:
+                listener.join()
+            except KeyboardInterrupt:
+                print("\n[INFO] Exiting.")
+            finally:
+                rec.close()
+    except Exception as e:
+        print(f"[ERROR] Keyboard listener failed: {e}")
+        print("[ERROR] Try running as Administrator or use voice trigger instead")
+        sys.exit(2)
 
 if __name__ == "__main__":
     main()

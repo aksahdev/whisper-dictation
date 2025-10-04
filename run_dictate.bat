@@ -5,15 +5,21 @@ REM Edit this file to customize your default settings
 cd /d "%~dp0"
 
 REM Check if virtual environment exists
-if not exist venv (
-    echo ERROR: Virtual environment not found
-    echo Please run setup_windows.bat first
-    pause
-    exit /b 1
+if not exist .venv (
+    if not exist venv (
+        echo ERROR: Virtual environment not found
+        echo Please run: uv venv
+        echo Then: uv pip install -r requirements.txt
+        pause
+        exit /b 1
+    )
+    call venv\Scripts\activate.bat
+    goto :run
 )
 
 REM Activate virtual environment
-call venv\Scripts\activate.bat
+call .venv\Scripts\activate.bat
+:run
 
 REM Default configuration - edit these lines to customize:
 REM   --trigger: voice or key

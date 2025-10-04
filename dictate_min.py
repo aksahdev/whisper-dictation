@@ -326,15 +326,23 @@ def main(argv: list[str] | None = None) -> None:
             error(f"Hotkey mode requires pynput: {e}")
             sys.exit(2)
 
-        # Resolve hotkey
-        special_vk = {"numpad5": 65437}
+        # Resolve hotkey (Windows-compatible)
+        import platform
+        special_vk = {
+            "numpad5": 12 if platform.system() == "Windows" else 65437,  # VK_CLEAR on Windows
+        }
         hotkey_key = None
         if args.hotkey.lower() in special_vk:
             hotkey_key = keyboard.KeyCode.from_vk(special_vk[args.hotkey.lower()])
+            log(f"Using virtual key code {special_vk[args.hotkey.lower()]} for {args.hotkey}")
         else:
             hotkey_key = getattr(keyboard.Key, args.hotkey.lower(), None)
             if hotkey_key is None:
-                hotkey_key = keyboard.KeyCode.from_char(args.hotkey)
+                try:
+                    hotkey_key = keyboard.KeyCode.from_char(args.hotkey)
+                except Exception:
+                    error(f"Invalid hotkey: {args.hotkey}")
+                    sys.exit(2)
 
         # Consider 'begin' (numpad center without numlock) as alias for numpad5
         begin_key = getattr(keyboard.Key, "begin", None)
@@ -371,25 +379,54 @@ def main(argv: list[str] | None = None) -> None:
                 done["v"] = True
 
         def matches_hotkey(k) -> bool:
-            return (k == hotkey_key) or (begin_key is not None and k == begin_key and args.hotkey.lower() == "numpad5")
+            # Direct comparison
+            if k == hotkey_key:
+                return True
+            # Check virtual key code for special keys
+            if hasattr(k, 'vk') and hasattr(hotkey_key, 'vk'):
+                if k.vk is not None and hotkey_key.vk is not None:
+                    if k.vk == hotkey_key.vk:
+                        return True
+            # Check for 'begin' key (numpad5 without numlock on some systems)
+            if begin_key is not None and k == begin_key and args.hotkey.lower() == "numpad5":
+                return True
+            return False
 
         def on_press(k):
-            if matches_hotkey(k):
-                if args.mode == "toggle":
-                    if not rec_active["v"]:
-                        start_rec()
+            try:
+                # Debug: show what key was pressed (only for numpad5)
+                if args.hotkey.lower() == "numpad5" and hasattr(k, 'vk'):
+                    log(f"Key pressed: {k}, vk={getattr(k, 'vk', None)}, hotkey_vk={getattr(hotkey_key, 'vk', None)}")
+                
+                if matches_hotkey(k):
+                    if args.mode == "toggle":
+                        if not rec_active["v"]:
+                            start_rec()
+                        else:
+                            stop_rec_and_transcribe()
                     else:
-                        stop_rec_and_transcribe()
-                else:
-                    start_rec()
+                        start_rec()
+            except Exception as e:
+                warn(f"on_press error: {e}")
 
         def on_release(k):
-            if args.mode == "hold" and matches_hotkey(k):
-                stop_rec_and_transcribe()
+            try:
+                if args.mode == "hold" and matches_hotkey(k):
+                    stop_rec_and_transcribe()
+            except Exception as e:
+                warn(f"on_release error: {e}")
 
         log(f"Hotkey mode active: {args.mode} on {args.hotkey.upper()} (Ctrl+C to exit)")
-        listener = keyboard.Listener(on_press=on_press, on_release=on_release)
-        listener.start()
+        log("TIP: Try pressing the key multiple times if it doesn't work immediately")
+        
+        try:
+            listener = keyboard.Listener(on_press=on_press, on_release=on_release)
+            listener.start()
+            log("Keyboard listener started successfully")
+        except Exception as e:
+            error(f"Failed to start keyboard listener: {e}")
+            error("Try running as Administrator or use --trigger voice instead")
+            sys.exit(2)
         try:
             while not done["v"]:
                 time.sleep(0.05)
